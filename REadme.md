@@ -223,3 +223,15 @@ print(f"Port {dst_port}, Flags: {flags}")
 | Source Port      | TCP   | `pkt[TCP].sport` |
 | Destination Port | TCP   | `pkt[TCP].dport` |
 | TCP Flags        | TCP   | `pkt[TCP].flags` |
+
+## **🛠 ICMP Basics**
+
+* ICMP packets have a **type field** that defines their purpose.
+
+| ICMP Type | Meaning                 | Use                         |
+| --------- | ----------------------- | --------------------------- |
+| **8**     | Echo Request            | Sent when someone pings you |
+| **0**     | Echo Reply              | Response to a ping          |
+| 3         | Destination Unreachable | Error message               |
+| 11        | Time Exceeded           | Used in traceroute          |
+
