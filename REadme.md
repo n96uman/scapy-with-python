@@ -231,6 +231,38 @@ print(f"Port {dst_port}, Flags: {flags}")
 | 3         | Destination Unreachable | Error message               |
 | 11        | Time Exceeded           | Used in traceroute          |
 
+## 📌 Ping Sweep Detection (ICMP Flood)
+
+Detects if a host sends too many ICMP echo requests (ping type 8).
+
+```python
+from scapy.all import *
+from collections import defaultdict
+import time
+
+icmp_tracker = defaultdict(list)
+time_max = 10
+threshold = 5
+
+def you(pkt):
+    if pkt.haslayer(ICMP) and pkt[ICMP].type == 8:  # Echo request
+        src = pkt[IP].src
+        now = time.time()
+
+        icmp_tracker[src].append(now)
+        icmp_tracker[src] = [t for t in icmp_tracker[src] if now - t <= time_max]
+
+        if len(icmp_tracker[src]) >= threshold:
+            print(f"[ALERT] Ping sweep from {src}")
+            icmp_tracker[src].clear()
+
+sniff(filter="icmp", prn=you, store=0)
+```
+
+✔️ ICMP `type=8` = **Echo Request (ping)**.
+✔️ Tracks how many pings come from each source in a given time window.
+✔️ Clears after alert to avoid repeated warnings.
+
 # **DNS Packet Analysis Notes (Compact)**
 
 ## **1️⃣ `pkt.haslayer(DNSQR)`**
