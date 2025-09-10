@@ -180,8 +180,6 @@ dst_ip = pkt[IP].dst
 print(f"{src_ip} -> {dst_ip}")
 ```
 
----
-
 ## **9 TCP Layer**
 
 * Contains **transport layer info** (ports, flags, sequence numbers).
@@ -204,8 +202,6 @@ dst_port = pkt[TCP].dport
 flags = pkt[TCP].flags
 print(f"Port {dst_port}, Flags: {flags}")
 ```
-
----
 
 ## **10 Why layer matters**
 
@@ -235,3 +231,63 @@ print(f"Port {dst_port}, Flags: {flags}")
 | 3         | Destination Unreachable | Error message               |
 | 11        | Time Exceeded           | Used in traceroute          |
 
+# **DNS Packet Analysis Notes (Compact)**
+
+## **1️⃣ `pkt.haslayer(DNSQR)`**
+
+* Checks if a packet contains a **DNS query record** (not just a response).
+* Only process packets where the client is **asking a domain**.
+
+```python
+if pkt.haslayer(DNSQR):
+    print("This packet contains a DNS query")
+```
+
+## **2️⃣ Why decode `qname`**
+
+* `pkt[DNSQR].qname` is stored as **bytes**, e.g., `b'example.com.'`.
+* `.decode()` converts it to a **human-readable string** for:
+
+  * Printing
+  * Measuring length
+  * Pattern analysis
+
+```python
+query_name = pkt[DNSQR].qname.decode()
+print(query_name)  # example.com
+```
+
+## **3️⃣ What info `qname` gives**
+
+* The **domain being queried**.
+* Can analyze:
+
+  * Length → unusually long domains may indicate **DNS tunneling**
+  * Subdomains → many subdomains in short time = suspicious
+  * Character patterns → base64 or random strings can hide data
+
+```python
+if len(query_name) > 50:
+    print("Suspiciously long domain!")
+```
+
+## **4️⃣ Other useful DNS info**
+
+| Field     | Layer | Purpose                                 |
+| --------- | ----- | --------------------------------------- |
+| `qtype`   | DNSQR | Type of query (A, AAAA, MX, TXT…)       |
+| `qdcount` | DNS   | Number of questions in packet           |
+| `ancount` | DNS   | Number of answer records                |
+| `rrname`  | DNSRR | Name in DNS answer                      |
+| `rdata`   | DNSRR | Data in answer (IP, text…)              |
+| `id`      | DNS   | Transaction ID (match request/response) |
+| `flags`   | DNS   | QR, AA, TC, RD, RA (packet behavior)    |
+
+* These fields help **detect anomalies, tunneling, or malicious DNS activity**.
+
+✅ **Summary:**
+
+* Use `haslayer(DNSQR)` to check for queries.
+* Decode `qname` for readable domain names.
+* Analyze **length, frequency, patterns** in `qname`.
+* Track other fields (`qtype`, `flags`, `rdata`) for deeper IDS detection.
